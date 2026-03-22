@@ -60,6 +60,7 @@ const elements = {
     addDuckmailFields: document.getElementById('add-duckmail-fields'),
     addLuckmailFields: document.getElementById('add-luckmail-fields'),
     addFreemailFields: document.getElementById('add-freemail-fields'),
+    addCloudmailFields: document.getElementById('add-cloudmail-fields'),
     addImapFields: document.getElementById('add-imap-fields'),
 
     // 编辑自定义域名模态框
@@ -74,6 +75,7 @@ const elements = {
     editDuckmailFields: document.getElementById('edit-duckmail-fields'),
     editLuckmailFields: document.getElementById('edit-luckmail-fields'),
     editFreemailFields: document.getElementById('edit-freemail-fields'),
+    editCloudmailFields: document.getElementById('edit-cloudmail-fields'),
     editImapFields: document.getElementById('edit-imap-fields'),
     editCustomTypeBadge: document.getElementById('edit-custom-type-badge'),
     editCustomSubTypeHidden: document.getElementById('edit-custom-sub-type-hidden'),
@@ -90,7 +92,7 @@ const CUSTOM_SUBTYPE_LABELS = {
     tempmail_builtin: 'Tempmail.lol（官方渠道）',
     yyds_mail: 'YYDS Mail（官方渠道）',
     tempmail: '📮 TempMail（自部署 Cloudflare Worker）',
-    cloudmail: '☁️ CloudMail（自部署 Cloudflare Worker）',
+    cloudmail: '☁️ CloudMail（Cloudflare Workers 邮箱）',
     duckmail: '🦆 DuckMail（DuckMail API）',
     luckmail: 'LuckMail（接码平台）',
     freemail: 'Freemail（自部署 Cloudflare Worker）',
@@ -200,10 +202,11 @@ function switchAddSubType(subType) {
     elements.addMoemailFields.style.display = subType === 'moemail' ? '' : 'none';
     elements.addTempmailBuiltinFields.style.display = subType === 'tempmail_builtin' ? '' : 'none';
     elements.addYydsFields.style.display = subType === 'yyds_mail' ? '' : 'none';
-    elements.addTempmailFields.style.display = (subType === 'tempmail' || subType === 'cloudmail') ? '' : 'none';
+    elements.addTempmailFields.style.display = subType === 'tempmail' ? '' : 'none';
     elements.addDuckmailFields.style.display = subType === 'duckmail' ? '' : 'none';
     elements.addLuckmailFields.style.display = subType === 'luckmail' ? '' : 'none';
     elements.addFreemailFields.style.display = subType === 'freemail' ? '' : 'none';
+    elements.addCloudmailFields.style.display = subType === 'cloudmail' ? '' : 'none';
     elements.addImapFields.style.display = subType === 'imap' ? '' : 'none';
 }
 
@@ -213,10 +216,11 @@ function switchEditSubType(subType) {
     elements.editMoemailFields.style.display = subType === 'moemail' ? '' : 'none';
     elements.editTempmailBuiltinFields.style.display = subType === 'tempmail_builtin' ? '' : 'none';
     elements.editYydsFields.style.display = subType === 'yyds_mail' ? '' : 'none';
-    elements.editTempmailFields.style.display = (subType === 'tempmail' || subType === 'cloudmail') ? '' : 'none';
+    elements.editTempmailFields.style.display = subType === 'tempmail' ? '' : 'none';
     elements.editDuckmailFields.style.display = subType === 'duckmail' ? '' : 'none';
     elements.editLuckmailFields.style.display = subType === 'luckmail' ? '' : 'none';
     elements.editFreemailFields.style.display = subType === 'freemail' ? '' : 'none';
+    elements.editCloudmailFields.style.display = subType === 'cloudmail' ? '' : 'none';
     elements.editImapFields.style.display = subType === 'imap' ? '' : 'none';
     elements.editCustomTypeBadge.textContent = CUSTOM_SUBTYPE_LABELS[subType] || CUSTOM_SUBTYPE_LABELS.moemail;
 }
@@ -329,7 +333,7 @@ function getCustomServiceTypeBadge(subType) {
         return '<span class="status-badge warning">TempMail</span>';
     }
     if (subType === 'cloudmail') {
-        return '<span class="status-badge info">CloudMail</span>';
+        return '<span class="status-badge" style="background-color:#00bcd4;color:white;">CloudMail</span>';
     }
     if (subType === 'duckmail') {
         return '<span class="status-badge success">DuckMail</span>';
@@ -404,60 +408,64 @@ async function loadCustomServices() {
             ...(r8.services || []).map(s => ({ ...s, _subType: 'freemail' })),
             ...(r9.services || []).map(s => ({ ...s, _subType: 'imap' }))
         ];
-
-        if (customServices.length === 0) {
-            elements.customTable.innerHTML = `
-                <tr>
-                    <td colspan="9">
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📭</div>
-                            <div class="empty-state-title">暂无自定义邮箱服务</div>
-                            <div class="empty-state-description">点击「添加服务」按钮创建新服务</div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        elements.customTable.innerHTML = customServices.map(service => {
-            return `
-            <tr data-id="${service.id}">
-                <td><input type="checkbox" data-id="${service.id}" ${selectedCustom.has(service.id) ? 'checked' : ''}></td>
-                <td>${escapeHtml(service.name)}</td>
-                <td>${getCustomServiceTypeBadge(service._subType)}</td>
-                <td style="font-size: 0.75rem; min-width: 400px;">${getCustomServiceAddress(service)}</td>
-                <td>--</td>
-                <td title="${service.enabled ? '已启用' : '已禁用'}">${service.enabled ? '✅' : '⭕'}</td>
-                <td>${service.priority}</td>
-                <td>${format.date(service.last_used)}</td>
-                <td>
-                    <div style="display:flex;gap:4px;align-items:center;white-space:nowrap;">
-                        <button class="btn btn-secondary btn-sm" onclick="editCustomService(${service.id}, '${service._subType}')">编辑</button>
-                        <div class="dropdown" style="position:relative;">
-                            <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();toggleEmailMoreMenu(this)">更多</button>
-                            <div class="dropdown-menu" style="min-width:80px;">
-                                <a href="#" class="dropdown-item" onclick="event.preventDefault();closeEmailMoreMenu(this);toggleService(${service.id}, ${!service.enabled})">${service.enabled ? '禁用' : '启用'}</a>
-                                <a href="#" class="dropdown-item" onclick="event.preventDefault();closeEmailMoreMenu(this);testService(${service.id})">测试</a>
-                            </div>
-                        </div>
-                        <button class="btn btn-danger btn-sm" onclick="deleteService(${service.id}, '${escapeHtml(service.name)}')">删除</button>
-                    </div>
-                </td>
-            </tr>`;
-        }).join('');
-
-        elements.customTable.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
-            cb.addEventListener('change', (e) => {
-                const id = parseInt(e.target.dataset.id);
-                if (e.target.checked) selectedCustom.add(id);
-                else selectedCustom.delete(id);
-            });
-        });
-
+        renderCustomServices();
     } catch (error) {
         console.error('加载自定义邮箱服务失败:', error);
+        toast.error('加载自定义邮箱服务失败');
     }
+}
+
+// 渲染自定义邮箱服务列表
+function renderCustomServices() {
+    if (customServices.length === 0) {
+        elements.customTable.innerHTML = `
+            <tr>
+                <td colspan="9">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-title">暂无自定义邮箱服务</div>
+                        <div class="empty-state-description">点击「添加服务」按钮创建新服务</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    elements.customTable.innerHTML = customServices.map(service => {
+        return `
+        <tr data-id="${service.id}">
+            <td><input type="checkbox" data-id="${service.id}" ${selectedCustom.has(service.id) ? 'checked' : ''}></td>
+            <td>${escapeHtml(service.name)}</td>
+            <td>${getCustomServiceTypeBadge(service._subType)}</td>
+            <td style="font-size: 0.75rem; min-width: 400px;">${getCustomServiceAddress(service)}</td>
+            <td>--</td>
+            <td title="${service.enabled ? '已启用' : '已禁用'}">${service.enabled ? '✅' : '⭕'}</td>
+            <td>${service.priority}</td>
+            <td>${format.date(service.last_used)}</td>
+            <td>
+                <div style="display:flex;gap:4px;align-items:center;white-space:nowrap;">
+                    <button class="btn btn-secondary btn-sm" onclick="editCustomService(${service.id}, '${service._subType}')">编辑</button>
+                    <div class="dropdown" style="position:relative;">
+                        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();toggleEmailMoreMenu(this)">更多</button>
+                        <div class="dropdown-menu" style="min-width:80px;">
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault();closeEmailMoreMenu(this);toggleService(${service.id}, ${!service.enabled})">${service.enabled ? '禁用' : '启用'}</a>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault();closeEmailMoreMenu(this);testService(${service.id})">测试</a>
+                        </div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="deleteService(${service.id}, '${escapeHtml(service.name)}')">删除</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    elements.customTable.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            if (e.target.checked) selectedCustom.add(id);
+            else selectedCustom.delete(id);
+        });
+    });
 }
 
 // 加载临时邮箱配置
@@ -548,8 +556,8 @@ async function handleAddCustom(e) {
             timeout: parseInt(formData.get('yyds_timeout'), 10) || 30,
             max_retries: parseInt(formData.get('yyds_max_retries'), 10) || 3
         };
-    } else if (subType === 'tempmail' || subType === 'cloudmail') {
-        serviceType = subType === 'cloudmail' ? 'cloudmail' : 'temp_mail';
+    } else if (subType === 'tempmail') {
+        serviceType = 'temp_mail';
         config = {
             base_url: formData.get('tm_base_url'),
             admin_password: formData.get('tm_admin_password'),
@@ -580,6 +588,25 @@ async function handleAddCustom(e) {
             admin_token: formData.get('fm_admin_token'),
             domain: formData.get('fm_domain')
         };
+    } else if (subType === 'cloudmail') {
+        serviceType = 'cloudmail';
+        const domainInput = formData.get('cm_domain');
+        // 处理域名：如果包含逗号，转换为数组；否则保持字符串
+        let domain = domainInput;
+        if (domainInput && domainInput.includes(',')) {
+            domain = domainInput.split(',').map(d => d.trim()).filter(d => d);
+        }
+        config = {
+            base_url: formData.get('cm_base_url'),
+            admin_email: formData.get('cm_admin_email'),
+            admin_password: formData.get('cm_admin_password'),
+            domain: domain
+        };
+        // 添加子域配置（如果有）
+        const subdomain = formData.get('cm_subdomain');
+        if (subdomain && subdomain.trim()) {
+            config.subdomain = subdomain.trim();
+        }
     } else {
         serviceType = 'imap_mail';
         config = {
@@ -821,6 +848,17 @@ async function editCustomService(id, subType) {
             document.getElementById('edit-fm-admin-token').value = '';
             document.getElementById('edit-fm-admin-token').placeholder = service.config?.admin_token ? '已设置，留空保持不变' : '请输入 Admin Token';
             document.getElementById('edit-fm-domain').value = service.config?.domain || '';
+        } else if (resolvedSubType === 'cloudmail') {
+            document.getElementById('edit-cm-base-url').value = service.config?.base_url || '';
+            document.getElementById('edit-cm-admin-email').value = service.config?.admin_email || '';
+            document.getElementById('edit-cm-admin-password').value = '';
+            document.getElementById('edit-cm-admin-password').placeholder = service.config?.admin_password ? '已设置，留空保持不变' : '请输入管理员密码';
+            // 处理域名：如果是数组，转换为逗号分隔的字符串
+            const domain = service.config?.domain;
+            const domainStr = Array.isArray(domain) ? domain.join(', ') : (domain || '');
+            document.getElementById('edit-cm-domain').value = domainStr;
+            // 设置子域
+            document.getElementById('edit-cm-subdomain').value = service.config?.subdomain || '';
         } else {
             document.getElementById('edit-imap-host').value = service.config?.host || '';
             document.getElementById('edit-imap-port').value = service.config?.port || 993;
@@ -866,7 +904,7 @@ async function handleEditCustom(e) {
         };
         const apiKey = formData.get('yyds_api_key');
         if (apiKey && apiKey.trim()) config.api_key = apiKey.trim();
-    } else if (subType === 'tempmail' || subType === 'cloudmail') {
+    } else if (subType === 'tempmail') {
         config = {
             base_url: formData.get('tm_base_url'),
             domain: formData.get('tm_domain'),
@@ -898,6 +936,25 @@ async function handleEditCustom(e) {
         };
         const token = formData.get('fm_admin_token');
         if (token && token.trim()) config.admin_token = token.trim();
+    } else if (subType === 'cloudmail') {
+        const domainInput = formData.get('cm_domain');
+        // 处理域名：如果包含逗号，转换为数组；否则保持字符串
+        let domain = domainInput;
+        if (domainInput && domainInput.includes(',')) {
+            domain = domainInput.split(',').map(d => d.trim()).filter(d => d);
+        }
+        config = {
+            base_url: formData.get('cm_base_url'),
+            admin_email: formData.get('cm_admin_email'),
+            domain: domain
+        };
+        // 添加子域配置（如果有）
+        const subdomain = formData.get('cm_subdomain');
+        if (subdomain && subdomain.trim()) {
+            config.subdomain = subdomain.trim();
+        }
+        const pwd = formData.get('cm_admin_password');
+        if (pwd && pwd.trim()) config.admin_password = pwd.trim();
     } else {
         config = {
             host: formData.get('imap_host'),

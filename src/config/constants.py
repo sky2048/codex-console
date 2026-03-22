@@ -214,6 +214,14 @@ EMAIL_SERVICE_DEFAULTS = {
         "password": "",
         "timeout": 30,
         "max_retries": 3,
+    },
+    "cloudmail": {
+        "base_url": "",
+        "admin_email": "",
+        "admin_password": "",
+        "domain": "",
+        "timeout": 30,
+        "max_retries": 3,
     }
 }
 

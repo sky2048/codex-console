@@ -19,7 +19,7 @@ from .duck_mail import DuckMailService
 from .luckmail_mail import LuckMailService
 from .freemail import FreemailService
 from .imap_mail import ImapMailService
-from .cloudmail import CloudMailService
+from .cloud_mail import CloudMailService
 
 # 注册服务
 EmailServiceFactory.register(EmailServiceType.TEMPMAIL, TempmailService)
@@ -67,6 +67,7 @@ __all__ = [
     'LuckMailService',
     'FreemailService',
     'ImapMailService',
+    'CloudMailService',
     'CloudMailService',
     # Outlook 模块
     'ProviderType',
