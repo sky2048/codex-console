@@ -825,7 +825,7 @@ async function editCustomService(id, subType) {
             document.getElementById('edit-yyds-default-domain').value = service.config?.default_domain || '';
             document.getElementById('edit-yyds-timeout').value = service.config?.timeout || 30;
             document.getElementById('edit-yyds-max-retries').value = service.config?.max_retries || 3;
-        } else if (resolvedSubType === 'tempmail' || resolvedSubType === 'cloudmail') {
+        } else if (resolvedSubType === 'tempmail') {
             document.getElementById('edit-tm-base-url').value = service.config?.base_url || '';
             document.getElementById('edit-tm-admin-password').value = '';
             document.getElementById('edit-tm-admin-password').placeholder = service.config?.admin_password ? '已设置，留空保持不变' : '请输入 Admin 密码';
