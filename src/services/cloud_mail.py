@@ -265,11 +265,6 @@ class CloudMailService(BaseEmailService):
 
         return f"{prefix}@{domain}"
 
-    def _generate_password(self, length: int = 12) -> str:
-        """生成随机密码"""
-        alphabet = string.ascii_letters + string.digits
-        return "".join(random.choices(alphabet, k=length))
-
     def create_email(self, config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         创建新邮箱地址
@@ -277,7 +272,6 @@ class CloudMailService(BaseEmailService):
         Args:
             config: 配置参数:
                 - name: 邮箱前缀（可选）
-                - password: 邮箱密码（可选，不提供则自动生成）
                 - domain: 邮箱域名（可选，覆盖默认域名）
                 - subdomain: 子域名（可选），会插入到 @ 和域名之间，例如 subdomain="test" 会生成 xxx@test.example.com
 
@@ -285,7 +279,6 @@ class CloudMailService(BaseEmailService):
             包含邮箱信息的字典:
             - email: 邮箱地址
             - service_id: 邮箱地址（用作标识）
-            - password: 邮箱密码
         """
         req_config = config or {}
 
@@ -299,15 +292,11 @@ class CloudMailService(BaseEmailService):
         else:
             email_address = self._generate_email_address(prefix, subdomain=subdomain)
 
-        # 生成或使用提供的密码
-        password = req_config.get("password") or self._generate_password()
-
-        # 直接生成邮箱信息（catch-all 域名无需预先创建）
+        # 直接生成邮箱信息（catch-all 域名无需预先创建，也不需要密码）
         email_info = {
             "email": email_address,
             "service_id": email_address,
             "id": email_address,
-            "password": password,
             "created_at": time.time(),
         }
 
